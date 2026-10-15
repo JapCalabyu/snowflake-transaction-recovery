@@ -36,7 +36,53 @@ The dataset covers April-September 2026: 3 branches, 6 customers, and 6 accounts
 
 During the original recovery exercise, the account-level count and amount differences were zero. A repeat recovery returned zero inserted rows, and an intentionally invalid query ID produced a FAILED audit entry.
 
-These results were observed during the learner-run Snowflake session and shared in chat. The reorganized repository scripts have not been re-executed in Snowflake. Screenshot files still need to be added.
+These results were observed during the learner-run Snowflake session. Original screenshots are presented below. The reorganized repository scripts have not been re-executed in Snowflake.
+
+## Project evidence
+
+These screenshots document the original recovery exercise, before the later repeat-run mistake described below. Click an image to inspect it more closely.
+
+### 1. Confirming the deletion
+
+The current table contained 1,092 transactions, compared with 2,196 before deletion. The difference was 1,104 missing transactions.
+
+![Current table versus pre-deletion transaction counts](screenshots/01-before-and-after-deletion.png)
+
+### 2. Validating the recovered totals
+
+The recovered table matched the baseline clone: 2,196 rows, 2,196 unique transaction IDs, PHP 549,000 in deposits, and PHP 219,600 in withdrawals.
+
+![Recovered transaction counts and totals compared with the baseline clone](screenshots/02-recovered-totals.png)
+
+### 3. Reconciling individual accounts
+
+All six accounts showed zero differences in transaction counts, deposits, and withdrawals when compared with the baseline.
+
+![Six accounts with zero count and amount differences](screenshots/03-account-reconciliation.png)
+
+### 4. Recording successful automated recovery
+
+The audit log recorded SUCCESS and 1,104 recovered rows for the automated recovery test, with no error message.
+
+![Successful automated recovery audit entry](screenshots/04-success-audit-log.png)
+
+### 5. Recording an intentional failure
+
+An invalid query ID deliberately triggered the error-handling path. The audit log recorded FAILED, zero recovered rows, and an error message. Some long fields are clipped in the original screenshot.
+
+![Failed recovery audit entry for the invalid query ID test](screenshots/05-failure-audit-log.png)
+
+### 6. Checking Time Travel retention
+
+The table-level retention setting was 1 day. This screenshot verifies the setting, not a Fail-safe recovery.
+
+![Time Travel retention set to one day at table level](screenshots/06-retention-settings.png)
+
+### 7. Reviewing monthly transaction trends
+
+The output includes all six months from April through September 2026. Months with 30 days contain 360 transactions; months with 31 days contain 372. The difference follows the fixed daily sample-data pattern, not a change in real customer behavior.
+
+![Monthly transaction counts, deposits, withdrawals, and net movement](screenshots/07-monthly-trends.png)
 
 ## Repository files
 
@@ -46,7 +92,7 @@ These results were observed during the learner-run Snowflake session and shared 
 | [02_manual_recovery.sql](sql/02_manual_recovery.sql) | Deletion simulation, manual recovery, and reconciliation |
 | [03_automated_recovery.sql](sql/03_automated_recovery.sql) | Recovery procedure, audit log, and test cases |
 | [04_validation_and_analytics.sql](sql/04_validation_and_analytics.sql) | Read-only checks and summaries |
-| [Screenshots checklist](screenshots/README.md) | Evidence to add before publishing |
+| [Screenshot files](screenshots/) | Original images embedded on this page |
 
 ## Important: do not rerun setup on the existing lab
 
@@ -90,4 +136,4 @@ The final repair check returned 3 branches, 6 customers, 6 accounts, 2,196 trans
 
 ## Next portfolio step
 
-Add selected screenshots after checking them for private account details. Upload only the contents of this project folder, not the full bootcamp workspace.
+Upload the updated main README and the screenshots folder together, preserving the folder name so the embedded images display. Upload only this project's files, not the full bootcamp workspace. Review images before public upload; audit screenshots include execution IDs and timestamps.
