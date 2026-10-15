@@ -1,0 +1,174 @@
+-- REFERENCE ONLY: all statements below are disabled with --.
+-- Do not run against your repaired lab. See README before a fresh practice run.
+-- To practice, remove ONE leading -- from a selected statement, not the whole file.
+
+-- -- Step 1: Create database and schema
+-- CREATE DATABASE IF NOT EXISTS FINTRUST_RECOVERY_LAB;
+-- 
+-- CREATE SCHEMA IF NOT EXISTS FINTRUST_RECOVERY_LAB.BANKING;
+-- 
+-- -- Step 2: Create banking tables
+-- CREATE TABLE IF NOT EXISTS FINTRUST_RECOVERY_LAB.BANKING.BRANCHES (
+--     BRANCH_ID NUMBER(10, 0),
+--     BRANCH_NAME VARCHAR(100),
+--     CITY VARCHAR(100),
+--     REGION VARCHAR(100)
+-- );
+-- 
+-- CREATE TABLE IF NOT EXISTS FINTRUST_RECOVERY_LAB.BANKING.CUSTOMERS (
+--     CUSTOMER_ID NUMBER(10, 0),
+--     FIRST_NAME VARCHAR(100),
+--     LAST_NAME VARCHAR(100),
+--     EMAIL VARCHAR(255),
+--     CREATED_AT TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
+-- );
+-- 
+-- CREATE TABLE IF NOT EXISTS FINTRUST_RECOVERY_LAB.BANKING.ACCOUNTS (
+--     ACCOUNT_ID NUMBER(10, 0),
+--     CUSTOMER_ID NUMBER(10, 0),
+--     BRANCH_ID NUMBER(10, 0),
+--     ACCOUNT_TYPE VARCHAR(30),
+--     OPENED_DATE DATE,
+--     OPENING_BALANCE NUMBER(18, 2),
+--     CURRENCY_CODE VARCHAR(3)
+-- );
+-- 
+-- CREATE TABLE IF NOT EXISTS FINTRUST_RECOVERY_LAB.BANKING.TRANSACTIONS (
+--     TRANSACTION_ID NUMBER(18, 0),
+--     ACCOUNT_ID NUMBER(10, 0),
+--     TRANSACTION_TIMESTAMP TIMESTAMP_NTZ,
+--     TRANSACTION_TYPE VARCHAR(20),
+--     AMOUNT NUMBER(18, 2),
+--     DESCRIPTION VARCHAR(255)
+-- );
+-- 
+-- SHOW TABLES IN SCHEMA FINTRUST_RECOVERY_LAB.BANKING;
+-- 
+-- -- Step 3: Add branches
+-- INSERT INTO FINTRUST_RECOVERY_LAB.BANKING.BRANCHES
+--     (BRANCH_ID, BRANCH_NAME, CITY, REGION)
+-- VALUES
+--     (1, 'FinTrust Manila', 'Manila', 'Metro Manila'),
+--     (2, 'FinTrust Cebu', 'Cebu City', 'Central Visayas'),
+--     (3, 'FinTrust Davao', 'Davao City', 'Davao Region');
+-- 
+-- SELECT *
+-- FROM FINTRUST_RECOVERY_LAB.BANKING.BRANCHES
+-- ORDER BY BRANCH_ID;
+-- 
+-- -- Step 4: Add customers
+-- INSERT INTO FINTRUST_RECOVERY_LAB.BANKING.CUSTOMERS
+--     (CUSTOMER_ID, FIRST_NAME, LAST_NAME, EMAIL)
+-- VALUES
+--     (1, 'Ana', 'Santos', 'ana.santos@example.com'),
+--     (2, 'Marco', 'Reyes', 'marco.reyes@example.com'),
+--     (3, 'Lea', 'Cruz', 'lea.cruz@example.com'),
+--     (4, 'Paolo', 'Garcia', 'paolo.garcia@example.com'),
+--     (5, 'Mia', 'Ramos', 'mia.ramos@example.com'),
+--     (6, 'Carlo', 'Torres', 'carlo.torres@example.com');
+-- 
+-- SELECT *
+-- FROM FINTRUST_RECOVERY_LAB.BANKING.CUSTOMERS
+-- ORDER BY CUSTOMER_ID;
+-- 
+-- -- Step 5: Add accounts
+-- INSERT INTO FINTRUST_RECOVERY_LAB.BANKING.ACCOUNTS
+--     (ACCOUNT_ID, CUSTOMER_ID, BRANCH_ID, ACCOUNT_TYPE,
+--      OPENED_DATE, OPENING_BALANCE, CURRENCY_CODE)
+-- VALUES
+--     (1001, 1, 1, 'Savings',  '2026-03-01', 10000.00, 'PHP'),
+--     (1002, 2, 1, 'Checking', '2026-03-01', 15000.00, 'PHP'),
+--     (1003, 3, 2, 'Savings',  '2026-03-01', 20000.00, 'PHP'),
+--     (1004, 4, 2, 'Checking', '2026-03-01', 12000.00, 'PHP'),
+--     (1005, 5, 3, 'Savings',  '2026-03-01', 18000.00, 'PHP'),
+--     (1006, 6, 3, 'Checking', '2026-03-01', 25000.00, 'PHP');
+-- 
+-- SELECT
+--     a.ACCOUNT_ID,
+--     c.FIRST_NAME,
+--     c.LAST_NAME,
+--     b.BRANCH_NAME,
+--     a.ACCOUNT_TYPE,
+--     a.OPENING_BALANCE,
+--     a.CURRENCY_CODE
+-- FROM FINTRUST_RECOVERY_LAB.BANKING.ACCOUNTS AS a
+-- LEFT JOIN FINTRUST_RECOVERY_LAB.BANKING.CUSTOMERS AS c
+--     ON a.CUSTOMER_ID = c.CUSTOMER_ID
+-- LEFT JOIN FINTRUST_RECOVERY_LAB.BANKING.BRANCHES AS b
+--     ON a.BRANCH_ID = b.BRANCH_ID
+-- ORDER BY a.ACCOUNT_ID;
+-- 
+-- -- Step 6: Generate six months of transactions
+-- INSERT INTO FINTRUST_RECOVERY_LAB.BANKING.TRANSACTIONS
+--     (TRANSACTION_ID, ACCOUNT_ID, TRANSACTION_TIMESTAMP,
+--      TRANSACTION_TYPE, AMOUNT, DESCRIPTION)
+-- 
+-- WITH calendar AS (
+--     SELECT
+--         DATEADD(
+--             day,
+--             ROW_NUMBER() OVER (ORDER BY SEQ4()) - 1,
+--             '2026-04-01'::DATE
+--         ) AS transaction_date
+--     FROM TABLE(GENERATOR(ROWCOUNT => 183))
+-- )
+-- 
+-- SELECT
+--     ROW_NUMBER() OVER (
+--         ORDER BY c.transaction_date, a.ACCOUNT_ID, t.transaction_order
+--     ),
+--     a.ACCOUNT_ID,
+--     DATEADD(hour, t.transaction_hour, c.transaction_date),
+--     t.transaction_type,
+--     t.amount,
+--     'Fictional transaction for recovery practice'
+-- FROM calendar AS c
+-- CROSS JOIN FINTRUST_RECOVERY_LAB.BANKING.ACCOUNTS AS a
+-- CROSS JOIN (
+--     VALUES
+--         (1, 'DEPOSIT',    500.00, 9),
+--         (2, 'WITHDRAWAL', 200.00, 17)
+-- ) AS t(transaction_order, transaction_type, amount, transaction_hour);
+-- 
+-- -- Step 7: Check monthly transactions
+-- SELECT
+--     TO_CHAR(TRANSACTION_TIMESTAMP, 'YYYY-MM') AS TRANSACTION_MONTH,
+--     COUNT(*) AS TRANSACTION_COUNT,
+--     SUM(CASE
+--         WHEN TRANSACTION_TYPE = 'DEPOSIT' THEN AMOUNT
+--         ELSE 0
+--     END) AS TOTAL_DEPOSITS,
+--     SUM(CASE
+--         WHEN TRANSACTION_TYPE = 'WITHDRAWAL' THEN AMOUNT
+--         ELSE 0
+--     END) AS TOTAL_WITHDRAWALS
+-- FROM FINTRUST_RECOVERY_LAB.BANKING.TRANSACTIONS
+-- GROUP BY TRANSACTION_MONTH
+-- ORDER BY TRANSACTION_MONTH;
+-- 
+-- -- Set retention before the deletion exercise
+-- ALTER TABLE FINTRUST_RECOVERY_LAB.BANKING.TRANSACTIONS
+-- SET DATA_RETENTION_TIME_IN_DAYS = 1;
+-- 
+-- 
+-- -- Step 8: Check Time Travel retention
+-- SHOW PARAMETERS LIKE 'DATA_RETENTION_TIME_IN_DAYS'
+-- IN TABLE FINTRUST_RECOVERY_LAB.BANKING.TRANSACTIONS;
+-- 
+-- -- Step 9: Create a baseline clone
+-- CREATE TABLE FINTRUST_RECOVERY_LAB.BANKING.TRANSACTIONS_BEFORE_DELETE
+-- CLONE FINTRUST_RECOVERY_LAB.BANKING.TRANSACTIONS;
+-- 
+-- SELECT
+--     COUNT(*) AS TRANSACTION_COUNT,
+--     COUNT(DISTINCT TRANSACTION_ID) AS UNIQUE_TRANSACTION_IDS,
+--     SUM(CASE
+--         WHEN TRANSACTION_TYPE = 'DEPOSIT' THEN AMOUNT
+--         ELSE 0
+--     END) AS TOTAL_DEPOSITS,
+--     SUM(CASE
+--         WHEN TRANSACTION_TYPE = 'WITHDRAWAL' THEN AMOUNT
+--         ELSE 0
+--     END) AS TOTAL_WITHDRAWALS
+-- FROM FINTRUST_RECOVERY_LAB.BANKING.TRANSACTIONS_BEFORE_DELETE;
+--
